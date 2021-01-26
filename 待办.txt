@@ -1,0 +1,405 @@
+office破解
+
+sql
+
+编号	终端号	系统版本	日期	违章时间	自动判断违章类型	自动判断违章车牌	实际违章类型	实际违章车牌	违章判断是否正确	车牌判断是否正确	车辆框图是否有清晰车牌	备注
+
+
+select 
+
+a.unique_id,  str
+a.equipment_no,  str
+b.equipment_version, str
+a.regulation_time,  str 
+c.machine_regulation, int
+c.machine_plate, str
+c.human_regulation, int
+c.human_plate, str
+c.regulation_reason, int
+c.plate_reason, int
+count(d.plate_reason) clear_nums  int
+
+
+from sys_regulation a left join sys_equipment b on a.equipment_no=b.equipment_code
+left join sys_regulation_report c on a.id=c.regulation_id
+left join sys_plate_detect_log d on a.id=d.regulation_id 
+where d.plate_reason==100
+group by a.unique_id,
+a.equipment_no,
+b.equipment_version,
+a.regulation_time,
+c.machine_regulation,
+c.machine_plate,
+c.human_regulation,
+c.human_plate,
+c.regulation_reason
+
+
+select 
+a.unique_id as noId, 
+a.equipment_no as equipmentNo, 
+b.equipment_version as equipmentVersion, 
+a.regulation_time as regulationTime, 
+c.machine_regulation as machineRegulationType, 
+e.dictionary_name ,
+c.machine_plate as machinePlate, 
+c.human_regulation as humanRegulationType, 
+f.dictionary_name ,
+c.human_plate as humanPlate, 
+c.regulation_reason as regulationIsRight, 
+c.plate_reason as plateIsRight, 
+count(d.plate_reason) as plateClearNums 
+
+from sys_regulation a left join sys_equipment b on a.equipment_no=b.equipment_code 
+left join sys_regulation_report c on a.id=c.regulation_id 
+left join sys_plate_detect_log d on a.id=d.regulation_id 
+left join sys_dictionary e on e.dictionary_code=c.machineRegulationType
+left join sys_dictionary f on f.dictionary_code=c.humanRegulationType
+where d.plate_reason = '100' 
+group by a.unique_id, a.equipment_no, b.equipment_version, a.regulation_time, 
+c.machine_regulation, c.machine_plate, c.human_regulation, c.human_plate, 
+c.regulation_reason, c.plate_reason,e.dictionary_name ,f.dictionary_name 
+
+
+
+consumer完善添加车牌人工识别
+
+
+
+新增获取首页接口，接口返回设备警告数，今日违章数等
+上传视频图片接口，新增百度识别车牌号代码，获取配置来判断本地识别或百度识别，以及添加相关日志
+
+上传视频图片接口，新增违章车牌在配置时间内去重，图片水印不需要违章时间，所属单位和所属车辆加判空逻辑
+改变原来的逻辑，将本地识别和百度识别的结果进行比较，获取到最正确的结果，记录日志
+
+
+1、创建一个特殊超级管理员账号，这个账号不能产生日志，只能我们内部人员使用，且上传记录只能由这个账号查看
+2、除了特殊账号之外，任何账号都不能查看交通违章-上传记录、系统管理-菜单管理、系统管理-接口管理
+3、角色管理里面不能出现这个特殊账号的相关角色，用户管理里面不能看到这个特殊账号
+4、角色管理的权限设置中不能出现上传记录，菜单管理和接口管理项
+记录违章车牌数据时添加唯一性ID字段，并支持ID查询
+
+查看问题人工上传证据图片，保存时出错。确认是前端的bug。第四张图片上传到视频目录下
+/api/regulation/updateRegulation
+违章state值修改
+百度置信度取最小值，并刷老数据
+在176服务器上安装RocketMQ并启动，查看控制台
+查看问题待审记录保存值后记录没有到采用记录中去
+
+当本地识别结果与百度识别结果相同时，直接取其中一个结果
+不相同时，百度识别大于0.95取百度结果，小于0.95时本地识别大于6取本地结果（首字替换），本地识别小于6认为识别失败
+百度无法识别时本地识别大于6取本地结果（首字替换），本地识别小于6认为识别失败
+定位查找问题，管理员更新用户角色时出现大量重复数据，前端传参有问题
+platform/getPlatform、platform/getHomePageInfo去除权限，不用权限也可以访问
+unit/getUint
+单位id为0能查看到所有单位
+单位id不为0只能看到所在单位以及下级单位
+role/getRole
+查询角色接口，只能查询到自己权限对应的角色
+
+百度识别代码优化，客户端配置成单例；
+将所有照片全部给百度识别，取每个字符的置信度最高的字符组成识别的车牌；
+详细记录的识别结果里增加列，显示每张图片的尺寸
+给表sys_plate_detect_log添加字段size，varchar(20)
+添加修改单位时新增省份简称字段；给表sys_unit添加字段province_abbr，varchar(5)
+添加RocketMQ消息机制，新建msg_consumer模块，修改生产消费消息代码，消息日志记录
+百度识别限流，每次请求不低于100ms
+
+新增部分接口
+车牌违章去重，反复修改车牌识别逻辑
+权限接口逻辑调整，一些表结构调整
+在测试环境的Jenkins工作台添加交通盒子项目的打包构建部署，自测通过
+新增特殊管理员账号，无数据库记录，无日志记录等特殊逻辑
+添加消息机制，服务器部署RcoketMQ服务，新增RocketMQ消费者组件，代码优化调整，自测通过
+
+
+
+
+
+
+
+有問題的
+{"array":[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[1006,270,1265,516],[837,297,973,449],[736,304,828,408],[655,315,725,397],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],"regulationId":1079}
+{"array":[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[1006,270,1265,516],[837,297,973,449],[736,304,828,408],[655,315,725,397],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],"regulationId":1078}
+{"array":[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[1006,270,1265,516],[837,297,973,449],[736,304,828,408],[655,315,725,397],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],"regulationId":1077}
+
+
+AC110002000141CF53F9080BFA800002
+AC110002000141CF53F9079BDCEE0001
+AC110002000141CF53F9079700420002
+
+
+
+评论表
+评论id
+评论者id
+被评论的目标id（可以是项目id，数据集id，模型id）
+内容content
+评论时间
+评论状态  1启用，2待审核，3禁用
+是否删除
+
+CREATE TABLE `pai_comments_detail` (
+  `id` varchar(64) NOT NULL COMMENT '评论id',
+  `user_id` varchar(255) NOT NULL COMMENT '用户id',
+  `commented_target_id` bigint(20) NOT NULL COMMENT '被评论的目标id，如项目id，数据集id，模型id',
+  `type` tinyint(1) NOT NULL COMMENT '评论类型，1项目2数据集3模型',
+  `content` text NOT NULL COMMENT '评论内容',
+  `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '评论状态  1启用，2待审核，3禁用',
+  `del_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0未删除1已删除',
+  `create_time` bigint(20) DEFAULT NULL COMMENT '创建时间，评论时间',
+  `update_time` bigint(20) DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_target_id` (`commented_target_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户评论明细表';
+
+
+回复表
+回复id
+父回复id
+被回复的评论id
+用户id
+回复内容
+回复时间
+回复状态  1启用，2待审核，3禁用
+是否删除
+
+CREATE TABLE `pai_reply_comments_detail` (
+  `id` varchar(64) NOT NULL COMMENT '回复id',
+  `user_id` varchar(255) NOT NULL COMMENT '用户id',
+  `comment_id` varchar(64) NOT NULL COMMENT '评论id',
+  `parent_id` varchar(64) DEFAULT NULL COMMENT '父回复id',
+  `type` tinyint(1) NOT NULL COMMENT '回复类型，1项目2数据集3模型',
+  `content` text NOT NULL COMMENT '回复内容',
+  `status` tinyint(1) NOT NULL DEFAULT '2' COMMENT '评论状态  1启用，2待审核，3禁用',
+  `del_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0未删除1已删除',
+  `create_time` bigint(20) DEFAULT NULL COMMENT '创建时间，回复时间',
+  `update_time` bigint(20) DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_comment_id` (`comment_id`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户回复评论明细表';
+
+
+
+用户举报评论关联表（统计评论的举报数）
+
+
+用户点赞评论表（统计评论的点赞数）
+用户点赞项目表（统计项目的点赞数）
+CREATE TABLE `pai_thumbup_detail` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `user_id` varchar(255) NOT NULL COMMENT '用户id',
+  `thumbuped_target_id` varchar(60) NOT NULL COMMENT '被点赞的目标id，如项目id，数据集id，模型id，评论id，回复id等',
+  `type` tinyint(1) NOT NULL COMMENT '点赞类型，1项目2数据集3模型4评论5回复等',
+  `del_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '0未删除1已删除',
+  `create_time` bigint(20) DEFAULT NULL COMMENT '创建时间，点赞时间',
+  `update_time` bigint(20) DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  KEY `idx_target_id` (`thumbuped_target_id`) USING BTREE,
+  KEY `idx_union` (`user_id`,`thumbuped_target_id`,`type`) USING BTREE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='用户点赞明细表';
+
+
+
+社区回复列表接口
+/communicate/getAllReplyInf?token=eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiJfNTEzNjhhY2FmMjRiNGZjNzllYjFkZDI3MDQ1ZWFiNzciLCJzdWIiOiLlvbzloZTnpL7ljLoiLCJpYXQiOjE2MDY5MDAwMTYsImlzcyI6ImJpdGFodWIuY29tIiwiYXVkIjoiYWRtaW4iLCJleHAiOjE2MDY5ODY0MTZ9.Bt-PjYV3O-NCBWXHkojHsXh338Q7EWYtXHjImOfhl9k&sortType=1&problemId=_2a4eaf20f4f0497a91c5a3fe96e778a9&page=1
+
+
+
+
+
+评论的问题
+显示的是用户昵称还是用户名？
+回复后面的是文本还是用户连接？
+公开日期是最新的还是最开始的？最新公开时间  pai_project的update_time
+SELECT max(pph.update_time) openTime FROM pai_project_history pph WHERE pph.project_id = (SELECT project_id FROM pai_user_project_relation where source_project_id= #{projectId}) and pph.del_flag = 0 and pph.type = 1 and pph.origin = 2
+
+评论举报的后续流程是怎么样？
+
+
+获取公开项目列表，返回新增点赞数、评论数，公开日期
+	/project/getPublicProjectList?sortType=1&pageNumber=1&pageSize=18&categoryId=
+	project/openProject公开项目 获取公开时间 1： pai_project_history的type=1是公开，update_time（long），del_flag，origin=2公开； 2 pai_user_project_relation的type=2是公开，del_flag=0，source_project_id=，update_time
+	
+新增项目热门榜接口
+新增评论统一接口
+创建训练项目引用模型，是否可以引用量化、转换后的模型？待定
+创建任务时选择团队算力逻辑修改
+保存并运行任务时，判断用户是否绑定微信，未绑定微信的用户，每天第一次点击运行任务时，弹窗提示绑定微信。
+
+
+查询模型接口，手动、任务、关注、全部
+/getAttentionModels
+/getUserOwnModels
+需要新增字段区分手动上传/任务生成
+
+alter table pai_model add create_way int(1) default -1 comment '模型的创建方式，-1默认老数据，1手动上传2任务选择';
+
+创建模型时保存创建模型方式（手动上传还是任务选择）
+
+
+
+
+spring.main.allow-bean-definition-overriding=true
+
+
+正在进行的任务
+project/getTaskViewList?taskStatus=RUNNING&pageNumber=1&pageSize=10&jobTag=
+
+
+/dataSet/api/dataSet/getProjectDataSetList?projectId=1000319
+/fileCenter/api/file/getPublicDatasetFileList?number=515kQ6FJH67z
+
+
+gateway/business/api/getPublicModels?pageNumber=1&pageSize=16
+
+/business/api/model/getModelDetail?modelId=2330&type=1
+
+/fileCenter/api/file/getFileListForModel?type=4&dir=/Model1607907280572&pageNumber=1&pageSize=10&userId=_9713195321e64a3eb16f20f6c3aabb79
+
+teamId
+
+
+
+删除项目
+
+
+/file/renameFile
+MultiValueMap<String, String> paramMap = new LinkedMultiValueMap<>();
+				String timestamp = String.valueOf(System.currentTimeMillis());
+				paramMap.add("projectName", project.getProjectName());
+				paramMap.add("timestamp", timestamp);
+				//TODO: 通过call远端的busenes file API 去私有GIT上初始化项目
+				Response<String> response = requestFileCenter(paramMap, userInfo, Constant.FILE_CENTER_PROJECT_INIT_REPOSITORY_API);
+				if(response.getMessage().getCode() == ResponseMessage.SUCCESS_CODE) {
+					project.setGitRepository(response.getData());
+					project.setGitTimestamp(timestamp);
+				} else {
+					return Response.ok(Constant.RESPONSE_STATUS_SUCCESS, response.getMessage().getCode(), response.getMessage().getMessage(), null);
+				}
+
+
+
+新增接口：
+1、删除任务   /job/deleteJob   http://doc.bitahub.com/project/133/interface/api/13466
+2、项目引用的模型列表  http://doc.bitahub.com/project/237/interface/api/13207
+3、正在进行的任务（包含提交中、等待中、运行中等状态的任务，目前前端需要展示五条） http://doc.bitahub.com/project/133/interface/api/13200
+4、删除项目 /project/delete http://doc.bitahub.com/project/133/interface/api/13459
+5、任务列表（优先展示运行中的任务，支持分页） /projectDetail   已修改原来接口 http://doc.bitahub.com/project/133/interface/api/2213
+修改接口：
+1、我的模型查询（/gateway/business/api/getUserModels），模型列表内容增加模型版本列表，接口支持分页+按名称关键字搜索
+这个没有修改，逻辑麻烦，新增了一个
+/getUserModelsByType  http://doc.bitahub.com/project/237/interface/api/13473
+2、公开模型查询（/gateway/business/api/getPublicModelsExceptOwn），接口支持分页+按名称关键字搜索           这个之前就支持了
+3、我的数据集查询（/gateway/dataSet/api/dataSet），接口支持分页+按名称关键字搜索  http://doc.bitahub.com/project/119/interface/api/2043
+4、我关注的数据集查询（/gateway/dataSet/api/getUserDataSet），接口支持分页+按名称关键字搜索  http://doc.bitahub.com/project/119/interface/api/4071
+5、公开数据集查询（/gateway/dataSet/api/optionalDataSetExceptOwnAndAttention），接口支持分页+按名称关键字搜索  http://doc.bitahub.com/project/119/interface/api/13480
+
+
+@ApiParam(value = "搜索关键字", required = false) @RequestParam(required = false) String searchName
+,String searchName
+,@Param("searchName")String searchName
+		<if test="searchName != null and searchName != ''">
+			AND d.name like concat('%',#{searchName},'%')
+		</if>
+		
+
+
+
+模型
+新增获取模型版本和目录接口；
+返回模型字段新增accuracy和modelFormat；
+评论联调
+新增分页获取评论下的回复接口；
+获取评论列表接口，去除评论下的回复部分，并获取评论下的回复数量；
+修复头像获取不到问题；
+删除评论的同时删除评论下的回复以及缓存数相应减少；
+训练项目
+新增删除项目接口；
+获取任务列表接口，对任务列表按任务状态进行排序（运行中的任务在前）
+新增删除任务的接口；
+新增获取用户个人模型的接口，支持类型查询、分页和关键字查询，以及返回模型版本列表；
+/dataSet，/getUserDataSet，/optionalDataSetExceptOwnAndAttention接口支持关键字查询；
+
+
+服务器地址：leinao@112.31.12.176:10022
+密码：qd8H#Y0x
+项目目录：/data/traffic
+更新方式：sudo su 切换到 root 并执行 source /etc/profile 更新java环境变量
+更新方式：直接把代码传到 /data/traffic目录下面
+更新方式：直接运行build.sh就可以打包测试环境（切换到root）
+更新方式：打包完到traffic-manager或msg_consumer下运行 ./run.sh restart 重启
+日志追踪：在对应目录下运行：tail -f out.log
+
+
+pai_project_model_relation新增字段
+
+alter table pai_project_model_relation add model_type int(1) default 0 comment '模型类型，0是原始模型，1是模型版本，默认0';
+
+/project       创建项目，保存模型和项目之间的关系
+/createJob     创建任务，通过模型与项目关联表查询模型
+
+
+
+
+/project       操作项目
+if (StringUtils.isNotBlank(modelIds)) {
+	String[] modelIdArr = modelIds.split(",");
+	List<ProjectModelDto> list = Lists.newArrayList();
+	for (String modelId : modelIdArr) {
+		ProjectModelDto pm = new ProjectModelDto();
+		pm.setProjectId(project.getId());
+		if(modelId.startsWith("V")){
+			//以V开头，表示是版本模型
+			pm.setModelId(Long.parseLong(modelId.substring(1)));
+			pm.setModelType(1);
+		}else{
+			pm.setModelId(Long.parseLong(modelId));
+			pm.setModelType(0);
+		}
+		pm.setCreateTime(currentTimeMillis);
+		pm.setUpdateTime(currentTimeMillis);
+		list.add(pm);
+	}
+	projectMapper.batchInsertProjectModelRel(list);
+}
+/gateway/business/api/model/getModelsByProjectId
+
+	<select id="getModelListByProjectId" resultType="com.leinao.model.model.Model">
+        (SELECT
+			m.id,
+			m.user_id AS userId,
+			m.model_name AS modelName,
+			m.type as type,
+			m.`language` AS LANGUAGE,
+			m.framework AS framework,
+			m.create_time AS createTime,
+			m.update_time AS updateTime,
+			ubi.account
+		FROM pai_model m
+		left join pai_project_model_relation pmr on(m.id = pmr.model_id)
+		left join ai_user_basic_info ubi on(m.user_id = ubi.id)
+		WHERE m.del_flag = 0
+        AND pmr.del_flag = 0
+        AND pmr.model_type = 0
+        and pmr.project_id = #{projectId})
+        UNION
+        (SELECT
+			m.id,
+			m.user_id AS userId,
+			m.model_name AS modelName,
+			m.public_flag as type,
+			m.`language` AS LANGUAGE,
+			m.framework AS framework,
+			m.create_time AS createTime,
+			m.update_time AS updateTime,
+			ubi.account
+		FROM pai_model_version m
+		left join pai_project_model_relation pmr on(m.id = pmr.model_id)
+		left join ai_user_basic_info ubi on(m.user_id = ubi.id)
+		WHERE m.del_flag = 0
+        AND pmr.del_flag = 0
+        AND pmr.model_type = 1
+        and pmr.project_id = #{projectId})
+    </select>
+

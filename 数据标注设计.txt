@@ -1,0 +1,353 @@
+
+
+项目
+主键id，项目名称，描述，类型，质检规则，进度百分比，项目状态，总数，已标注数，未标注数，已审核数，未审核
+
+数据仓库
+主键id，仓库名称，描述，数据总条数
+
+项目仓库关联
+项目id，仓库id，已标注数，未标注数
+
+数据对象（音频/图片/视频）MongoDB
+主键id，数据仓库id，数据对象名称，数据对象存储路径
+
+
+一级标签
+主键id，颜色，标签名，标注工具
+二级标签，列表
+主键id，一级标签主键id，标签名，标签类型，可选值
+
+标签（一级标签）项目关联表
+项目id，标签id，数据对象数量
+
+
+数据对象操作表（一个数据对象一条记录）MongoDB
+主键id，数据对象id，项目id，数据仓库id，是否分配，分配人，分配时间，标注人，是否标注，标注时间，标注结果（json格式，比如坐标，一级标签id，二级标签id和内容等），审核人，是否审核，审核时间，审核结果（通过/不通过），审核不通过原因
+
+
+数据对象操作与一级标签的关联表（因为标注结果是json，不便于根据标签搜索数据对象）MongoDB
+主键id，数据操作id，数据对象id，一级标签id
+
+用户表
+主键id，账号，名称，email，上次登陆时间，登陆次数
+
+角色表
+主键id，角色code，角色名称
+
+用户角色关联表
+主键id，用户id，角色id
+
+
+用户操作信息表
+主键id，用户id，分配标注数，分配审核数，已标注数，驳回数，已审核数，未审核数
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------
+表名和列名都用下划线分割
+
+字符编码，排序字符集的问题
+使用这个   CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci
+
+CHARACTER SET utf8 COLLATE utf8_general_ci
+utf8mb4 是 utf8 的超集并完全兼容utf8，能够用四个字节存储更多的字符，utf8mb4适用于存储现在手机端常用的表情字符 emoji和一些不常用的汉字，但是占用空间大。
+_general_ci 在比较和排序的时候更快
+_unicode_ci 是基于标准的Unicode来排序和比较，能够在各种语言之间精确排序
+
+创建时间更新时间统一用datetime
+
+
+还是timestamp
+datetime和timestamp都可以表示 YYYY-MM-DD HH:MM:SS 这种年月日时分秒格式的数据。
+datetime的存储范围是 1000-01-01 00:00:00.000000 到 9999-12-31 23:59:59.999999，而timestamp的范围是 1970-01-01 00:00:01.000000到 2038-01-19 03:14:07.999999
+datetime存储与时区无关（准备来说是datetime只支持一个时区，就是存储时当前服务器的时区），而timestamp存储的是与时区有关。MySQL在存储TIMESTAMP时，会先将时间从当前服务器的时区转换为UTC（世界协调时）以进行存储，然后查询时从UTC转换为当前时区以进行返回。也就是说使用timestamp进行存储的时间返回的时候会随着数据库的时区而发生改变。而datetime的存储则与时区无关，数据是什么就存储什么，也就返回什么。
+在5.6.4之前，datetime存储占用8个字节，而timestamp是占用4字节；但是在5.6.4之后，由于这两个类型允许有小数部分，所以占用的存储空间和以前不同；MySQL规范规定，datetime的非小数部分需要5个字节，而不是8个字节，而timestamp的非小数部分是需要4个字节，并且这两个部分的小数部分都需要0到3个字节，具体取决于存储值的小数秒精度。
+
+创建人更新人统一用create_by，update_by吧
+--------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+-- 项目表
+CREATE TABLE `label_project` (
+  `id` varchar(64) NOT NULL COMMENT 'uuid',
+  `project_name` varchar(50) NOT NULL COMMENT '项目名称',
+  `description` varchar(255) DEFAULT NULL COMMENT '项目描述',
+  `project_type` tinyint(1) DEFAULT NULL COMMENT '项目类型：0图像分类1图像标注2图像分割3姿态标注4视频追踪5文本标注',
+  `quality_rule` tinyint(1) NOT NULL DEFAULT '0' COMMENT '质量规则：0全量质检1抽样质检',
+  `percentage` varchar(3) DEFAULT NULL COMMENT '百分比 ',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `status` tinyint(1) NOT NULL DEFAULT '0' COMMENT '项目状态：0未开始，1正在进行中，2已经完成',
+
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB COMMENT='项目表';
+
+
+-- 数据仓库表
+CREATE TABLE `label_ods` (
+  `id` varchar(64) NOT NULL COMMENT 'uuid',
+  `name` varchar(255) NOT NULL COMMENT '数据仓库名称',
+  `desc` varchar(2000) DEFAULT NULL COMMENT '数据仓库描述',
+  `total` bigint(18) DEFAULT NULL COMMENT '数据总数量',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) NOT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB COMMENT='数据仓库表';
+
+
+-- 数据仓库项目关联表
+CREATE TABLE `label_ods_project_relation` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `ods_id` varchar(64) NOT NULL COMMENT '数据仓库id',
+  `project_id` varchar(64) NOT NULL COMMENT '项目id',
+  `marked_num` int(11) DEFAULT NULL COMMENT '已标注数',
+  `reviewed_num` int(11) DEFAULT NULL COMMENT '已审核数',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  `create_by` varchar(64) NOT NULL COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY(`id`),
+  UNIQUE KEY `idx_ods_project` (`ods_id`,`project_id`)
+) ENGINE=InnoDB COMMENT='数据仓库项目关联表';
+
+
+
+-- 角色表
+CREATE TABLE `label_role` (
+  `id` varchar(64) NOT NULL COMMENT 'uuid',
+  `role_code` varchar(64) DEFAULT NULL COMMENT '角色code',
+  `role_name` varchar(64) DEFAULT NULL COMMENT '角色名',
+  `role_description` varchar(64) DEFAULT NULL COMMENT '角色说明',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB COMMENT='角色表';
+
+
+-- 用户角色关联表
+CREATE TABLE `label_user_project_role_relation` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `role_id` varchar(64) DEFAULT NULL COMMENT '角色id',
+  `user_id` varchar(64) DEFAULT NULL COMMENT '用户id',
+  `user_name` varchar(64) NOT NULL COMMENT '用户名',
+  `email` varchar(64) DEFAULT NULL COMMENT '用户email',    
+  `project_id` varchar(64) DEFAULT NULL COMMENT '项目id',  
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB COMMENT='用户角色关联表';
+
+
+-- 用户操作信息表
+CREATE TABLE `label_user_operation` (
+  `id` varchar(64) NOT NULL COMMENT 'uuid',
+  `user_id` varchar(64) DEFAULT NULL COMMENT '用户id',
+  `project_id` varchar(64) DEFAULT NULL COMMENT '项目id',   
+  `assign_mark_num` int(11) DEFAULT '0' COMMENT '分配标注数',
+  `assign_review_num` int(11) DEFAULT '0' COMMENT '分配审核数',
+  `marked_num` int(11) DEFAULT '0' COMMENT '已标注数',
+  `unpass_num` int(11) DEFAULT '0' COMMENT '驳回数',
+  `reviewed_num` int(11) DEFAULT '0' COMMENT '已审核数',
+  `unreviewed_num` int(11) DEFAULT '0' COMMENT '未审核数',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`project_id`,`user_id`) USING BTREE
+) ENGINE=InnoDB COMMENT='用户操作信息表';
+
+
+-- 数据集创建信息表
+CREATE TABLE `label_dataset_create_info` (
+  `id` varchar(64) NOT NULL COMMENT 'uuid',
+  `project_id` varchar(64) DEFAULT NULL COMMENT '项目id',
+  `dataset_id` varchar(64) DEFAULT NULL COMMENT '数据集id',  
+  `tag_id` varchar(64) DEFAULT NULL COMMENT '标签id',   
+  `created_num` int(11) DEFAULT '0' COMMENT '已创建数',
+  `total_num` int(11) DEFAULT '0' COMMENT '总数',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user` (`dataset_id`,`tag_id`) USING BTREE
+) ENGINE=InnoDB COMMENT='数据集创建信息表';
+
+
+-- 一级标签表
+CREATE TABLE `label_first_tag` (
+  `id` varchar(64) NOT NULL COMMENT 'uuid',
+  `color` varchar(10) NOT NULL COMMENT '颜色，#00ffee',
+  `name` varchar(64) NOT NULL COMMENT '一级标签名称',
+  `tool` varchar(64) NOT NULL COMMENT '标注工具名称，点，线，矩形4圆形，多边形',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB COMMENT='一级标签表';
+
+-- 二级标签表
+CREATE TABLE `label_second_tag` (
+  `id` varchar(64) NOT NULL COMMENT 'uuid',
+  `first_tag_id` varchar(64) NOT NULL COMMENT '一级标签id',
+  `name` varchar(64) NOT NULL COMMENT '二级标签名称',
+  `type` tinyint(1)  NOT NULL COMMENT '标签类型，1单选2多选3文本',
+  `value` text default NULL COMMENT '标签可选值',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_first_tag` (`first_tag_id`) USING BTREE
+) ENGINE=InnoDB COMMENT='二级标签表';
+
+
+-- 项目标签关联表
+CREATE TABLE `label_project_tag_relation` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `project_id` varchar(64) NOT NULL COMMENT '项目id',
+  `first_tag_id` varchar(64) NOT NULL COMMENT '一级标签id',
+  `total` int(11) NOT NULL COMMENT '数据对象数量',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_project_tag` (`project_id`,`first_tag_id`)
+) ENGINE=InnoDB COMMENT='项目标签关联表';
+
+
+数据对象操作表（一个数据对象一条记录）MongoDB
+CREATE TABLE `label_data_object_operation` (
+  `id` varchar(64) NOT NULL COMMENT 'uuid',
+  `project_id` varchar(64) NOT NULL COMMENT '项目id',
+  `ods_id` varchar(64) NOT NULL COMMENT '数据仓库id',
+  `data_object_id` varchar(64) NOT NULL COMMENT '数据对象id', 
+  `name` varchar(255) NOT NULL COMMENT '文件名称',
+  `path` varchar(255) NOT NULL COMMENT '存储路径，/label/{仓库id}/{真实路径}',
+  `mark_flag` tinyint(1) DEFAULT NULL COMMENT '是否标注：0未标注，1已标注',
+  `mark_by` varchar(64) DEFAULT NULL COMMENT '标注人id',  
+  `mark_time` datetime DEFAULT NULL COMMENT '标注时间', 
+  
+  `mark_content` text DEFAULT NULL COMMENT '标注结果（json格式字符串，包含比如坐标，一级标签id，二级标签id和内容等）',
+  
+  `review_flag` tinyint(1) DEFAULT NULL COMMENT '是否审核：0未审核，1已审核',
+  `review_by` varchar(64) DEFAULT NULL COMMENT '审核人id',  
+  `review_time` datetime DEFAULT NULL COMMENT '审核时间', 
+  `review_result` tinyint(1) DEFAULT NULL COMMENT '审核结果，0不通过，1通过',
+  `unpass_reason` text DEFAULT NULL COMMENT '审核不通过原因',
+  
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_data_object` (`data_object_id`) USING BTREE,
+  KEY `idx_union` (`project_id`,`ods_id`) USING BTREE
+) ENGINE=InnoDB COMMENT='数据对象操作表';
+
+
+数据对象操作与一级标签的关联表 MongoDB
+CREATE TABLE `label_data_object_tag_relation` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `operation_id` varchar(64) NOT NULL COMMENT '数据操作id',
+  `first_tag_id` varchar(64) NOT NULL COMMENT '一级标签id',
+  `data_object_id` varchar(64) NOT NULL COMMENT '数据对象id',  
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_unique` (`operation_id`,`first_tag_id`,`data_object_id`) 
+) ENGINE=InnoDB COMMENT='数据对象操作与一级标签的关联表';
+
+
+数据对象（音频/图片/视频）MongoDB
+CREATE TABLE `label_data_object` (
+  `id` varchar(64) NOT NULL COMMENT 'uuid',
+  `ods_id` varchar(64) NOT NULL COMMENT '数据仓库id',
+  `name` varchar(255) NOT NULL COMMENT '文件名称',
+  `path` varchar(255) NOT NULL COMMENT '存储路径，/label/{仓库id}/{真实路径}',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_ods` (`ods_id`) USING BTREE
+) ENGINE=InnoDB COMMENT='数据对象';
+
+
+
+这张表不需要
+--------------
+用户表
+CREATE TABLE `label_user` (
+  `id` varchar(64) NOT NULL COMMENT 'uuid',
+  `account` varchar(64) NOT NULL COMMENT '账号',
+  `user_name` varchar(64) NOT NULL COMMENT '用户名',
+  `email` varchar(64) DEFAULT NULL COMMENT '用户email',  
+  `password` varchar(64) DEFAULT NULL COMMENT '用户密码',
+  `last_login_time` datetime DEFAULT NULL COMMENT '上一次登录时间',
+  `count` int(11) DEFAULT NULL COMMENT '登录次数',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
+  `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `update_by` varchar(64) DEFAULT NULL COMMENT '更新人',
+  `delete_flag` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除表示：0未删除 1删除',
+  `delete_by` varchar(64) DEFAULT NULL COMMENT '删除人id',
+  `delete_time` datetime DEFAULT NULL COMMENT '删除时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB COMMENT='用户表';
+--------------
+

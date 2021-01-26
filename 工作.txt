@@ -1,0 +1,225 @@
+
+交通盒子
+gitlab地址 http://202.38.69.240:10070/LeiNao/Traffic-platform
+git地址 http://gitlab.bitahub.com/LeiNao/Traffic-platform.git
+http://gitlab.bitahub.com/community-backend/leinao-parent.git
+测试地址 112.31.12.176:8000 访问账号是 admin 123456
+测试环境linux服务器 112.31.12.176:2202 leinao qd8H#Y0x
+这个服务器内网ip是10.12.4.8:22
+jar包位置：/data/leinao-demo/build
+http://localhost:8001/swagger-ui.html#/
+
+上传视频接口
+http://112.31.12.176:10101/video/upload_video
+
+
+
+安装nodejs
+npm install yarn tyarn
+npm config set registry https://registry.npm.taobao.org
+tyarn install
+yarn start
+上面不行用下面
+npm install -g yarn
+npm install -g tyarn
+tyarn install
+yarn start
+
+
+
+docker ps -a
+docker logs -f b746f068b95d
+
+
+
+
+2020-11-09----202011-13
+定位解决bug，待审记录中没有单位显示所有单位的违法信息
+新增获取首页接口，接口返回设备警告数，今日违章数等
+上传视频图片接口，新增百度识别车牌号代码，获取配置来判断本地识别或百度识别，以及添加相关日志
+Jenkins工作台添加交通盒子项目的打包构建部署，测试通过
+上传视频图片接口，新增违章车牌在配置时间内去重，图片水印不需要违章时间，所属单位和所属车辆加判空逻辑
+改变原来的逻辑，将本地识别和百度识别的结果进行比较，获取到最正确的结果，记录日志
+
+mybatis-plus:
+  configuration
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl #开启sql日志
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+logging:
+  level:
+    com.threefivework.mymall.dao.mapper: DEBUG //包路径为mapper文件包路径
+
+百度识别成功结果
+{"words_result":{"number":"皖AA3830","vertexes_location":[{"x":132,"y":272},{"x":200,"y":269},{"x":202,"y":299},{"x":133,"y":302}],"color":"unknown","probability":[0.8206793665885925,0.8446135520935059,0.879983127117157,0.8973727226257324,0.9027959108352661,0.8582592606544495,0.8700169920921326]},"log_id":1327075073131020288}
+
+
+@Autowired
+    BCryptPasswordEncoder bCryptPasswordEncoder;
+bCryptPasswordEncoder.encode(jsonObject.getPassword())
+
+
+AccountConstant.HIDE_SUPER_ADMIN
+
+
+//隐藏超级管理员特殊逻辑
+
+RoleTypeEnum.ROLE_LEINAO_ADMIN.getName()
+RoleTypeEnum.ROLE_ADMIN.getName()
+RoleTypeEnum.ROLE_MIDDLE.getName()
+RoleTypeEnum.ROLE_USER.getName()
+
+
+regulation/searchCondition
+regulation/searchCheck
+regulation/searchReturn
+
+
+1、创建一个特殊超级管理员账号，这个账号不能产生日志，只能我们内部人员使用，且上传记录只能由这个账号查看
+2、除了特殊账号之外，任何账号都不能查看交通违章-上传记录、系统管理-菜单管理、系统管理-接口管理
+3、角色管理里面不能出现这个特殊账号的相关角色，用户管理里面不能看到这个特殊账号
+4、角色管理的权限设置中不能出现上传记录，菜单管理和接口管理项
+记录违章车牌数据时添加唯一性ID字段，并支持ID查询
+ALTER TABLE sys_regulation ADD COLUMN unique_id varchar(50) DEFAULT NULL COMMENT '设备id+时间戳' AFTER id;
+ALTER TABLE `sys_regulation` ADD INDEX idx_unique_id ( `unique_id` )
+ALTER TABLE sys_regulation drop COLUMN unique_id
+查看问题人工上传证据图片，保存时出错。确认是前端的bug。第四张图片上传到视频目录下
+/api/regulation/updateRegulation
+违章state值修改
+百度置信度取最小值，并刷老数据
+在176服务器上安装RocketMQ并启动，查看控制台
+查看问题待审记录保存值后记录没有到采用记录中去
+
+当本地识别结果与百度识别结果相同时，直接取其中一个结果
+不相同时，百度识别大于0.95取百度结果，小于0.95时本地识别大于6取本地结果（首字替换），本地识别小于6认为识别失败
+百度无法识别时本地识别大于6取本地结果（首字替换），本地识别小于6认为识别失败
+定位查找问题，管理员更新用户角色时出现大量重复数据，前端传参有问题
+platform/getPlatform、platform/getHomePageInfo去除权限，不用权限也可以访问
+unit/getUint
+单位id为0能查看到所有单位
+单位id不为0只能看到所在单位以及下级单位
+role/getRole
+查询角色接口，只能查询到自己权限对应的角色
+
+
+
+org.springframework.web.multipart.support.StandardMultipartHttpServletRequest
+[Lorg.springframework.web.multipart.MultipartFile;
+
+
+
+
+百度识别代码优化，客户端配置成单例；
+将所有照片全部给百度识别，取每个字符的置信度最高的字符组成识别的车牌；
+详细记录的识别结果里增加列，显示每张图片的尺寸
+给表sys_plate_detect_log添加字段size，varchar(20)
+添加修改单位时新增省份简称字段；给表sys_unit添加字段province_abbr，varchar(5)
+添加RocketMQ消息机制，新建msg_consumer模块，修改生产消费消息代码，消息日志记录
+百度识别限流，每次请求不低于100ms
+
+
+CREATE TABLE `sys_mq_message_log` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键id',
+  `msg_id` varchar(255) DEFAULT NULL COMMENT '消息id',
+  `msg_type` varchar(50) NOT NULL COMMENT '消息业务类型名称',
+  `topic` varchar(128) DEFAULT NULL COMMENT '主题名称',
+  `tag` varchar(128) DEFAULT NULL COMMENT '标签',
+  `content` text DEFAULT NULL COMMENT '消息内容',
+  `status` int(5) NOT NULL COMMENT '1、已发送；2、发送成功；3、发送失败；4、已接收未消费；5、消费成功；6、消费失败；',
+  `failed_reason` text DEFAULT NULL COMMENT '失败原因',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+	KEY `idx_msg_type` (`msg_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='rocketMQ消息日志表';
+
+
+百度识别限流10QPS，采用队列方式实现
+
+
+
+date -s "20201126 11:04:00"
+
+nohup java -jar -Dloader.path=./lib msg_consumer-0.0.1-SNAPSHOT.jar >> consume.log 2>&1 &
+sudo nohup java -jar -Dloader.path=target/lib target/msg_consumer-0.0.1-SNAPSHOT.jar > /dev/null 2>&1 &
+
+
+,new MessageQueueSelector() {
+            @Override
+            public MessageQueue select(List<MessageQueue> mqs, Message msg, Object arg) {
+                int hash = arg.hashCode() & Integer.MAX_VALUE;
+                System.out.println("hash:"+hash);
+                int index = hash % mqs.size();
+                System.out.println("index:"+index);
+                return mqs.get(index);
+            }
+        }
+		
+		
+
+交通盒子的百度识别策略修改
+定位查找没有百度识别日志记录的问题，修复截图时超出视频宽高的问题，修复没有添加第四张图片的问题
+查找定位解决循环消费问题，发现在inset和update时一直卡在那里，导致mq服务器重复发送消息。
+bitahub V3.0需求评审，梳理需求，跟产品讨论需求细节
+梳理社区、社区后台关于评论回复以及举报的代码逻辑，设计bitahub的评论点赞和举报逻辑
+设计编写点赞、评论表和模型、mapper，自测sql执行结果
+
+
+
+sudo docker exec -it mysql bash
+
+mysql -uroot -proot
+
+
+
+
+
+
+
+
+
+
+热门项目榜
+  项目热度按照一个项目被点赞数、引用数、收藏数、评论数按一定权重计算
+  项目-用户关联表，类型：点赞、引用、收藏、评论
+热门达人榜
+
+
+
+
+修改评论/回复表主键长整型改为字符串
+新增举报类以及dao/mapper，枚举常量类
+新增点赞/评论/回复/举报的服务类以及实现
+新增点赞/评论/回复/举报的controller层，逻辑实现，评论回复内容敏感词过滤
+自测通过
+新人培训以及考试
+推理模型逻辑梳理
+
+
+
+蓝湖
+2845320142@qq.com    密码：leinao123
+数据库
+112.31.12.176 10013
+K&3hsU7D*t123
+nacos 的用户名密码改了，大家更新一下
+10.11.3.5:30000 (调试环境) ==》 http://112.31.12.178:10021/nacos (调试环境)              nacos/Bita#1199
+10.10.8.5:31000（测试环境）==》http://112.31.12.177:10033/nacos（测试环境）         nacos/Ailab#1199
+
+
+YApi接口
+weijunbao@leinao.ai
+weijunbao
+
+
+
+Map<String, JobInfoDto> jobInfoMap = jobInfoList.stream().collect(Collectors.toMap(JobInfoDto::getJobName,jobInfoDto -> jobInfoDto,(oldValue,newValue) -> oldValue));
+
+
+新增获取最近运行任务列表的接口，统计用户创建项目/拷贝项目的数量
+将配置json转为配置类，进行代码重构，自测构建
+参加数据标注的需求评审
+设计数据标注的表结构，统一规范建表语句命令，进行表结构sql汇总、整理，并评审表结构sql
+
+
