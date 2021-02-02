@@ -223,3 +223,15 @@ Map<String, JobInfoDto> jobInfoMap = jobInfoList.stream().collect(Collectors.toM
 设计数据标注的表结构，统一规范建表语句命令，进行表结构sql汇总、整理，并评审表结构sql
 
 
+
+https://112.31.12.178:5443/gateway/fileCenter/api/file/qiniu/upload
+
+{"name":"AS","profile":"TEST","path":"/datasets/AS"}
+
+
+
+数据标注
+3.0bug修复
+3.0和社区七牛工具替换   file sdk
+社区接入用户中心
+

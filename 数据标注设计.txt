@@ -298,6 +298,8 @@ CREATE TABLE `label_data_object_tag_relation` (
   `operation_id` varchar(64) NOT NULL COMMENT '数据操作id',
   `first_tag_id` varchar(64) NOT NULL COMMENT '一级标签id',
   `data_object_id` varchar(64) NOT NULL COMMENT '数据对象id',  
+  `path` varchar(255) NOT NULL COMMENT '存储路径，/label/{仓库id}/{真实路径}',
+  `name` varchar(255) NOT NULL COMMENT '文件名称',
   `create_time` datetime DEFAULT NULL COMMENT '创建时间',
   `create_by` varchar(64) DEFAULT NULL COMMENT '创建人id',
   `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
