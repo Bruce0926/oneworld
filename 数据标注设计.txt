@@ -191,6 +191,8 @@ CREATE TABLE `label_dataset_create_info` (
   `id` varchar(64) NOT NULL COMMENT 'uuid',
   `project_id` varchar(64) DEFAULT NULL COMMENT '项目id',
   `dataset_id` varchar(64) DEFAULT NULL COMMENT '数据集id',  
+  `name` varchar(255) DEFAULT NULL COMMENT '数据集名称',
+  `profile` varchar(255) DEFAULT NULL COMMENT '数据集简介',
   `tag_id` varchar(64) DEFAULT NULL COMMENT '标签id',   
   `created_num` int(11) DEFAULT '0' COMMENT '已创建数',
   `total_num` int(11) DEFAULT '0' COMMENT '总数',
