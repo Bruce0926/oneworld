@@ -235,3 +235,13 @@ https://112.31.12.178:5443/gateway/fileCenter/api/file/qiniu/upload
 3.0和社区七牛工具替换   file sdk
 社区接入用户中心
 
+
+
+
+社区集成用户中心方案以及代码重构 - 7天
+数据标注系统开发以及联调 - 4天
+社区集成图片服务SDK - 1天
+社区code码重构（需要在gitlab和github集成以及模块拆分完成后开始做） - 
+3.0测试bug修复
+数据标注代码code review
+排序算法分享

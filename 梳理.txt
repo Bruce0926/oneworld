@@ -296,3 +296,127 @@ minio新增根据路径获取文件流方法
 与前端联调并定位修复创建任务的代码缺陷，删除数据集的代码缺陷，获取项目模型的代码缺陷
 
 定位修复根据模型获取个人的所有引用项目
+
+
+
+
+
+      (SELECT
+            pm.`id`,
+            pm.`user_id` AS userId,
+            pm.`model_introduction` modelIntroduction,
+            pm.`model_name` modelName,
+            pm.`model_cover` modelCover,
+            pm.`type`,
+            pm.`language`,
+            pm.`framework`
+        FROM
+            pai_project p
+        LEFT JOIN pai_project_model_relation pmp ON pmp.project_id = p.id
+        LEFT JOIN pai_model pm ON pmp.model_id = pm.id
+        WHERE
+             p.user_id=#{userId}
+             AND p.id=#{id}
+             AND  pmp.del_flag = 0
+             AND pm.type = 0)
+    	UNION
+    	(SELECT
+            pm.`id`,
+            pm.`user_id` AS userId,
+            pm.`model_introduction` modelIntroduction,
+            pm.`model_name` modelName,
+            pm.`model_cover` modelCover,
+            pm.`type`,
+            pm.`language`,
+            pm.`framework`
+        FROM
+            pai_project p
+        LEFT JOIN pai_project_model_relation pmp ON pmp.project_id = p.id
+        LEFT JOIN pai_model_version pmv ON pmp.model_id = pmv.id
+        LEFT JOIN pai_model pm ON pmv.pid = pm.id
+        WHERE
+             p.user_id=#{userId}
+             AND p.id=#{id}
+             AND  pmp.del_flag = 0
+             AND pm.type = 0)
+		
+		
+
+
+用户中心集成到社区服务
+
+梳理社区的用户服务接口
+/manage/login 用户登录，参数email，password，codeType，调用usercenter/createToken
+/manage/loginOut 用户登出，调用usercenter/destroyToken
+/manage/checkEmail 验证邮箱是否注册，调用usercenter/checkEmail
+/manage/sentEmailCode 发送邮箱验证码，调用usercenter/sentEmailCode
+/manage/registeUser 用户注册，email，emailCode，password，type，调用usercenter/registeUser
+/manage/registeUserNew 新用户注册，email, emailCode, password, type, account，调用usercenter/registeUserNew
+/manage/editPassword 修改用户密码，userId, oldPassword, newPassword，调用usercenter/editPassword
+/manage/getMsgCode 获取短信验证码，调用usercenter/getMsgCode
+/manage/getMsgCodeNew 获取短信验证码，调用usercenter/getMsgCode
+/manage/addDeveloper 申请开发者，userId, inviteCode, realName, telphone, identityCode, trade, company, msgCode，调用usercenter/addDeveloper
+/manage/applyDeveloper 申请开发者，realName, telphone, verificationCode, IDCard, industryNature, companyName, userId，调用usercenter/saveApplyDeveloper或者usercenter/addDeveloper
+/manage/commitEmail 忘记密码提交邮箱，调用usercenter/sentEmailCode
+/manage/resetPassword 重设密码，email, identifyCode, password，调用usercenter/resetPassword
+/manage/registeredByGithub 授权github用户登录，调用usercenter/registeredByGithub
+/manage/quickLogingBindingByExist 第三方账号绑定已有社区账号，email, password, quickLoginType, quickLoginToken，调用usercenter/quickLogingBindingByExist
+/manage/quickLogingBindingByRegister 第三方账号绑定新注册账号，email, emailCode, password, quickLoginType, quickLoginToken，调用usercenter/quickLogingBindingByRegister
+/manage/registeredByWeibo 微博用户授权登录验证，调用usercenter/registeredByWeibo
+/manage/registeredByQQ QQ用户授权登录验证，调用/usercenter/registeredByQQ
+/manage/handleWeChatInfo 验签微信服务地址，调用usercenter/handleWeChatInfo?type=1
+/manage/handleWeChatInfo 微信消息推送请求，调用usercenter/handleWeChatInfo
+/manage/getWXPublicQRCode 获取微信公众号临时二维码，调用usercenter/getWXPublicQRCode
+/manage/loginBySceneId 根据场景id来登录，调用usercenter/loginBySceneId
+/manage/sentEmailCodeInternational 发送邮件验证码(国际化版)，调用usercenter/sentEmailCode
+/manage/quickLogin 第三方平台快速登录，调用usercenter/quickLogin
+
+
+/manage/checkLogin 检查用户是否登录，参数token，实际是userId，调用userService用户服务
+/manage/userCenter 获取用户个人中心信息，调用userService用户服务
+/manage/getUserInfo 获取个人资料，调用userService用户服务
+/manage/editUserHeadImage 修改用户头像，调用userService用户服务，用到七牛云工具类
+/manage/editUserInfo 修改用户资料，userId, username, position, company, description，调用userService用户服务
+/manage/notice 获取用户通知列表，调用userService用户服务
+/manage/checkInviteCode 验证邀请码，调用userService用户服务
+/manage/checkInviteCodeNew 验证邀请码，调用userService用户服务
+/manage/registeredByWeiXin 授权微信用户登录，调用微信官方接口，调用userService用户服务
+/manage/checkPermissions 查询用户是否限制使用资源，调用userService用户服务
+/manage/getCodeCreate 个人中心获取二维码，https://m.bitahub.com/views/registe.html?inviteType=2&inviter="+userId
+
+拦截器
+调用usercenter/checkToken
+
+
+usercenter/addDeveloper
+验证邀请码和短信验证码
+usercenter/saveApplyDeveloper
+验证短信验证码
+
+
+
+#文件上传配置
+upload.accesskey: pNAjs3ZfCKxCw2m3y_FEQfDDyC60zyBptMhwEmhZ
+upload.secretkey: Uwn3wa7gnChnSp8OQzu23YgpqRtJPErMUuI1PWOE
+upload.bucket.image: test
+upload.bucket.video: videotest
+upload.bucket.training: training
+upload.type: qiniu
+upload.host: img.bitahub.com/server
+upload.usehttps: true
+
+
+/gateway/business/api/jobJupyterUrl?projectId=12844
+/gateway/business/api/tensor/startTensorboard
+
+原来的nacos访问地址112.31.12.178:10021需要改成202.38.95.227:10021在办公网才能访问
+202.38.95.227:10021
+
+
+
+
+
+kubectl logs -f deploy/pai-dataset-service
+
+
+http://pai-common-service3:12009/initThumbUpAndComment
