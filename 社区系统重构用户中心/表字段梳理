@@ -1,0 +1,54 @@
+ai_theme_user_attention_relation      username，head_image，description
+ai_user_follow   head_image
+ai_problem       username，head_image，description
+ai_api_basic     username，head_image，description
+ai_api_review    username，head_image，description
+ai_api_second_review     username，head_image，description
+ai_article       username，head_image，description
+ai_article_review        username，description
+ai_article_second_review           username，head_image，description
+ai_expert_article_comment          username，head_image           
+ai_user_praise_article   username
+ai_user_collect_article  username
+ai_user_follow_problem   username
+ai_user_praise_problem_reply       username
+ai_theme_detail          username，head_image
+ai_theme_user_relation   username，head_image，description
+ai_theme_detail_review   username，head_image
+ai_theme_detail_second_review      username，head_image
+ai_order_storage_size    username，email
+ai_order_user_storage_size         username，email
+ai_order_base            username，email
+ai_user_report_reply     username
+ai_problem_reply         username，head_image，description,,,update_date,position
+ai_problem_second_reply  username
+user_score_info          username，head_image
+ai_active_entry          username，email
+ai_active_work           username，email
+ai_order_calculation_power_record     username，email
+ai_order_ticket_detail   username
+ai_user_developer_info   username，email，head_image
+ai_qr_invitation_record  username
+ai_order_payment_water   username
+ai_order_user_time_record             username
+ai_user_follow_label     username，head_image
+
+
+
+没有userName，现在用account
+
+
+
+
+/manage/addDeveloper 申请开发者，userId, inviteCode, realName, telphone, identityCode, trade, company, msgCode，调用usercenter/addDeveloper
+/manage/applyDeveloper 申请开发者，realName, telphone, verificationCode, IDCard, industryNature, companyName, userId，调用usercenter/saveApplyDeveloper或者usercenter/addDeveloper
+
+拦截器
+调用usercenter/checkToken
+
+usercenter/addDeveloper
+验证邀请码和短信验证码
+usercenter/saveApplyDeveloper
+验证短信验证码
+
+

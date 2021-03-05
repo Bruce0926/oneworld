@@ -1,0 +1,199 @@
+/article/content 获取文章内容  ai.leinao.manage.dao.mapper.UserMapper#getUserByIdWithDel
+		select
+		<include refid="allColumnsSql"></include>
+		from
+		ai_user_basic_info
+		where id = #{id}
+token和login拦截器  ai.leinao.manage.dao.mapper.UserMapper#getUserById
+		select
+		<include refid="allColumnsSql"></include>
+		from
+		ai_user_basic_info
+		where
+		id = #{id} and
+		del_flag = 0
+/manage/bita/userSynchro 双创同步数据  ai.leinao.manage.dao.mapper.UserMapper#getUserByEmail
+/manage/bita/getEmail 双创查询email是否注册  ai.leinao.manage.dao.mapper.UserMapper#getUserByEmail
+		select
+		<include refid="allColumnsSql"></include>
+		from
+			ai_user_basic_info 
+		where 
+			email = #{email} and
+			del_flag = 0
+/manage/searchUserByKeyword 根据关键字模糊搜索用户信息 ai.leinao.manage.dao.mapper.UserMapper#getUserByKeyWord
+		select
+		<include refid="allColumnsSql"></include>
+		 from ai_user_basic_info
+		<where>
+			<if test="keyWord != null and keyWord != ''">
+				username like "%"#{keyWord}"%" and
+			</if>
+			del_flag = 0
+		</where>
+		limit #{startNum},#{pageSize}
+/manage/searchUserByKeyword 根据关键字模糊搜索用户信息		 ai.leinao.manage.dao.mapper.UserMapper#getUserCountByKeyWord
+/manage/search 根据关键字搜索  ai.leinao.manage.dao.mapper.UserMapper#getUserCountByKeyWord
+		select count(*) from ai_user_basic_info
+		<where>
+			<if test="keyWord != null and keyWord != ''">
+				username like "%"#{keyWord}"%" and
+			</if>
+			del_flag = 0
+		</where>
+		
+-----------返回lastLoginTime的前五个		
+/manage/activeTop5 获取活跃用户Top5		ai.leinao.manage.dao.mapper.UserMapper#getActiveUserTop5
+		select
+			id,
+			username,
+			concat(#{qiniuDomainNameURL},head_image) as head_image,
+			description,
+			active_time 
+		from
+			ai_user_basic_info
+		where
+			del_flag = 0
+		order by 
+			active_time desc 
+		limit 0,5
+		
+-----------注释掉更新用户活跃度时间的代码		
+/article/save	 添加文章 ai.leinao.manage.dao.mapper.UserMapper#updateUserActiveTime（更新用户活跃度时间）	
+/article/editArticle 编辑文章  ai.leinao.manage.dao.mapper.UserMapper#updateUserActiveTime（更新用户活跃度时间）	
+/article/updateCollection  文章收藏处理流程  ai.leinao.manage.dao.mapper.UserMapper#updateUserActiveTime（更新用户活跃度时间）	
+/communicate/insertProblemInf 提问题   ai.leinao.manage.dao.mapper.UserMapper#updateUserActiveTime（更新用户活跃度时间）	
+/communicate/followProblem 关注问题 /取消问题关注   ai.leinao.manage.dao.mapper.UserMapper#updateUserActiveTime（更新用户活跃度时间）	
+/communicate/collectProblem  收藏问题  / 取消问题收藏  ai.leinao.manage.dao.mapper.UserMapper#updateUserActiveTime（更新用户活跃度时间）	
+/manage/follow  关注   ai.leinao.manage.dao.mapper.UserMapper#updateUserActiveTime（更新用户活跃度时间）	
+拦截器   ai.leinao.manage.dao.mapper.UserMapper#updateUserActiveTime（更新用户活跃度时间）	
+。。。
+		update 
+			ai_user_basic_info 
+		set 
+			active_time = now()
+		where 
+			id = #{userId} and
+			del_flag = 0 and
+			status = 1
+			
+			
+-----------待确认，这个接口是否必须，有在用，---------
+/manage/getUserInfoByUserIdOrEmail   根据用户ID或邮箱获取用户信息 		ai.leinao.manage.dao.mapper.UserMapper#getUserInfoByUserIdOrEmail
+		select id as userId,
+			   username as username,
+			   head_image as headImage
+		from ai_user_basic_info
+		where id in
+		<foreach collection="userIdOrEmailList" index="index" item="item"
+				 open="(" separator="," close=")">
+			#{item}
+		</foreach>
+		or email in
+		<foreach collection="userIdOrEmailList" index="index" item="item"
+				 open="(" separator="," close=")">
+			#{item}
+		</foreach>
+		and (del_flag = 0 AND `STATUS`=1)
+		
+		
+/order/getUserInfo  查询用户信息		ai.leinao.manage.dao.mapper.UserMapper#getUserEmailAndName
+		select 
+			id,username,email 
+		from 
+			ai_user_basic_info i 
+		where 
+			i.id = #{userId}
+/manage/bita/userSynchro		双创同步数据   ai.leinao.manage.dao.mapper.UserMapper#saveUserForFuture
+	   insert into
+			ai_user_basic_info(id,account,username,password,email,status,position,company,description,head_image,honor,active_time,is_developer,email_code,msg_code,user_source,create_by,create_date,update_by,update_date,remarks,del_flag, is_limited)
+	   values(#{user.id},#{user.account},#{user.username},#{user.password},#{user.email},#{user.status},#{user.position},#{user.company},#{user.description},#{user.headImage},#{user.honor},now(),#{user.isDeveloper},#{user.emailCode},#{user.msgCode},#{user.userSource},#{user.createBy},now(),#{user.updateBy},#{user.updateDate},#{user.remarks},#{user.delFlag},#{user.isLimited})
+/user/getUserByPage  分页获取注册用户列表服务   ai.leinao.manage.dao.operation.mapper.RegisterMapper#getRegisterCount
+		select count(*) from ai_user_basic_info
+		<where>
+			<if test='type == "1"'> 
+				is_developer = 1 and 
+			</if>
+			<if test="keyWord != null and keyWord != ''">
+			<!-- 20190114 曹阳 增加可使用邮箱号检索对用户进行检索功能 -->
+				(username like "%"#{keyWord}"%" or email like "%"#{keyWord}"%") and
+			</if>
+			del_flag = 0
+		</where>
+/user/getUserByPage  分页获取注册用户列表服务  ai.leinao.manage.dao.operation.mapper.RegisterMapper#getRegisterByPage
+		select
+		<include refid="allColumnsSql"></include>
+		from ai_user_basic_info
+		<where>
+			<if test="type != null and type != ''"> 
+				is_developer = 1 and 
+			</if>
+			<if test="keyWord != null and keyWord != ''">
+			<!-- 20190114 曹阳 增加可使用邮箱号检索对用户进行检索功能 -->
+				(username like "%"#{keyWord}"%" or email like "%"#{keyWord}"%") and
+			</if>
+			del_flag = 0
+		</where>
+		order by create_date desc limit #{startNum},#{pageSize}
+		
+			
+/user/updateUserStatus  修改注册用户状态服务		ai.leinao.manage.dao.operation.mapper.RegisterMapper#updateRegisterStatus
+		update 
+			ai_user_basic_info 
+		set 
+			status=#{status} 
+		where 
+			id in <foreach item="item" index="index" collection="userIdList" open="(" separator="," close=")"> #{item} </foreach>
+/user/deleteUser  删除用户 			ai.leinao.manage.dao.operation.mapper.RegisterMapper#deleteRegister
+		update 
+			ai_user_basic_info 
+		set 
+			del_flag = 1 
+		where 
+			id in <foreach item="item" index="index" collection="userIdList" open="(" separator="," close=")"> #{item} </foreach>
+			
+----------------接口废弃-----------------
+/user/modifyUserLimiteInfo  修改是否限制使用资源			ai.leinao.manage.dao.operation.mapper.RegisterMapper#updateLimiteInfo
+		update
+		ai_user_basic_info
+		set
+		is_limited=#{isLimited}
+		where
+		id in <foreach item="item" index="index" collection="userIdList" open="(" separator="," close=")"> #{item} </foreach>
+/pay/yaoYaoQueryOrder  光大-瑶瑶 查询订单支付信息     ai.leinao.mapper.AiOrderBaseDao#getYaoYaoUserInfo
+/pay/yaoYaoGetToken  瑶瑶支付获取token方法  ai.leinao.mapper.AiOrderBaseDao#getYaoYaoUserInfo
+/pay/yaoYaoUpdatePayOrder  瑶瑶通知订单支付成功接口  ai.leinao.mapper.AiOrderBaseDao#getYaoYaoUserInfo
+        SELECT
+            id,
+            email,
+            username,
+          `password`
+        FROM
+            ai_user_basic_info
+        WHERE
+            email = #{email}
+/order/charging  第三方扣除用户余额   ai.leinao.mapper.AiOrderThirdPartyMapper#getUserInfo
+        select id,
+               email,
+               username
+        from ai_user_basic_info
+        where id = #{userId}
+        and email = #{email}
+        and del_flag = 0
+        and status = 1
+/orderStorage/saveUserStorage  计算平台存储用户已用存储信息接口 	ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserId	
+/orderStorage/queryStorage   根据用户id 查询已用算力信息            ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserId
+/operationUserTime/saveUserTimeRecord  计算平台-扣除用户机时        ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserId
+/operationUserTime/getBatchFlag  计算平台-查询任务是否已扣费        ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserId
+/calculationPower/deduction  计算平台扣除用户机时                   ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserId
+/calculationPower/validateDeduction  根据任务名和集群名查询是否已经扣费  ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserId
+order-controller拦截器   ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserId
+        SELECT id FROM ai_user_basic_info WHERE id=#{userId} AND id='_paicontrolcenter0000000000000001'and email='paictrlcenter@leinao.ai'
+		
+-----------------------待确认，管理员角色在用户中心的对应		
+/calculationPower/getUserCalculationPowerDetails   查询用户算力收支明细接口		    ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserIdForManage
+/calculationPower/getUserCalculationPower   根据token 查询用户剩余算力和已用算力    ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserIdForManage
+/userTime/getUserTimeForCompute   计算平台-获取用户机时                             ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserIdForManage
+/userTime/getUserTimeRecordForCompute   计算平台-获取用户机时详情                   ai.leinao.mapper.AiUserTimeRecordMapper#getComputeUserIdForManage
+        SELECT username FROM ai_user_basic_info WHERE id=#{userId} AND manage_role=1
+		
